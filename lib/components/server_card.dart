@@ -6,6 +6,7 @@ import '../provider/server_provider.dart';
 
 class ServerCard extends StatelessWidget {
   final Server server;
+  final Future<void> Function() onUpdate;
 
   const ServerCard({Key? key, required this.server, required this.onUpdate})
       : super(key: key);
