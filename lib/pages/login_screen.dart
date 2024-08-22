@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../dio/ApiService.dart';
 import '../components/login_screen_top_image.dart';
+import '../main.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -26,7 +27,10 @@ class _LoginScreenState extends State<LoginScreen> {
       if (token != null) {
         SharedPreferences prefs = await SharedPreferences.getInstance();
         await prefs.setString('token', token);
-        Navigator.pushReplacementNamed(context, '/servers');
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const MyApp()),
+        );
       } else {
         setState(() {
           _error = 'Username or password is incorrect';

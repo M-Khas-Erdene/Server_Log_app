@@ -1,76 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'server.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert' as JH;
-import 'package:http/http.dart' as http;
 import '../pages/edit_server_page.dart';
+import 'package:provider/provider.dart';
+import '../provider/server_provider.dart';
 
-class ServerDetail extends StatefulWidget {
+class ServerDetail extends StatelessWidget {
   final int serverId;
-  final Future<void> Function() onUpdate;
 
-  const ServerDetail({Key? key, required this.serverId, required this.onUpdate})
-      : super(key: key);
-
-  @override
-  _ServerDetailState createState() => _ServerDetailState();
-}
-
-class _ServerDetailState extends State<ServerDetail> {
-  late Server server;
-  bool isLoading = true;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _fetchServerDetails();
-  }
-
-  Future<void> _fetchServerDetails() async {
-    setState(() {
-      isLoading = true;
-    });
-
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? token = prefs.getString('token');
-
-    final response = await http.get(
-      Uri.parse('http://10.0.2.2:5000/servers/${widget.serverId}'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-    );
-
-    if (response.statusCode == 200) {
-      final updatedServerData = JH.jsonDecode(response.body);
-      setState(() {
-        server = Server.fromJson(updatedServerData);
-        isLoading = false;
-      });
-    } else {
-      setState(() {
-        isLoading = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-              'Failed to load server details: ${response.statusCode} ${response.body}'),
-        ),
-      );
-    }
-  }
-
-  String formatDateTime(DateTime? dateTime) {
-    if (dateTime == null) return '';
-    final dateTimeWithOffset = dateTime.add(const Duration(hours: 8));
-    return DateFormat('yyyy-MM-dd HH:mm').format(dateTimeWithOffset);
-  }
+  const ServerDetail({Key? key, required this.serverId}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    if (isLoading) {
+    final serverProvider = Provider.of<ServerProvider>(context);
+
+    if (serverProvider.isLoading) {
       return Scaffold(
         appBar: AppBar(
           title: const Text('Loading...'),
@@ -78,7 +21,13 @@ class _ServerDetailState extends State<ServerDetail> {
         body: const Center(child: CircularProgressIndicator()),
       );
     }
+    String formatDateTime(DateTime? dateTime) {
+      if (dateTime == null) return '';
+      final dateTimeWithOffset = dateTime.add(const Duration(hours: 8));
+      return DateFormat('yyyy-MM-dd HH:mm').format(dateTimeWithOffset);
+    }
 
+    final server = serverProvider.server!;
     bool isActive = server.status.toLowerCase() == 'active';
 
     return Scaffold(
@@ -176,8 +125,7 @@ class _ServerDetailState extends State<ServerDetail> {
                   );
 
                   if (shouldRefresh ?? false) {
-                    await widget.onUpdate();
-                    Navigator.pop(context, true);
+                    await serverProvider.fetchServerDetails(serverId);
                   }
                 },
                 style: ElevatedButton.styleFrom(

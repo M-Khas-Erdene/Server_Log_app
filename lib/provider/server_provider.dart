@@ -3,26 +3,28 @@ import '../dio/ApiService.dart';
 import '../components/server.dart';
 
 class ServerProvider with ChangeNotifier {
-  final ApiService _apiService = ApiService();
-  Server? server;
-  bool isLoading = true;
+  final ApiService apiService = ApiService();
+  Server? _server;
+  bool _isLoading = true;
+
+  Server? get server => _server;
+  bool get isLoading => _isLoading;
 
   Future<void> fetchServerDetails(int serverId) async {
-    isLoading = true;
+    _isLoading = true;
     notifyListeners();
 
     try {
-      server = await _apiService.fetchServerDetails(serverId);
-      isLoading = false;
+      _server = await apiService.fetchServerDetails(serverId);
+    } finally {
+      _isLoading = false;
       notifyListeners();
-    } catch (e) {
-      isLoading = false;
-      throw Exception('Failed to load server details: $e');
     }
   }
 
-  void updateServerStatus(Server updatedServer) {
-    server = updatedServer;
-    notifyListeners();
+  Future<void> updateServerDetails(
+      int serverId, Map<String, dynamic> data) async {
+    await apiService.updateServerDetails(serverId, data);
+    await fetchServerDetails(serverId);
   }
 }
