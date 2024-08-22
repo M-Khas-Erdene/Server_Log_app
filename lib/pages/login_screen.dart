@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../dio/ApiService.dart';
 import '../components/login_screen_top_image.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -15,39 +14,27 @@ class _LoginScreenState extends State<LoginScreen> {
   String? _error;
   bool _showPassword = false;
 
+  final ApiService apiService = ApiService();
+
   Future<void> _handleLogin() async {
     final username = _usernameController.text;
     final password = _passwordController.text;
 
     try {
-      final response = await http.post(
-        Uri.parse('http://10.0.2.2:5000/login'),
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: jsonEncode({
-          'loginData': {
-            'username': username,
-            'password': password,
-          },
-        }),
-      );
+      final token = await apiService.login(username, password);
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final token = data['token'];
+      if (token != null) {
         SharedPreferences prefs = await SharedPreferences.getInstance();
         await prefs.setString('token', token);
         Navigator.pushReplacementNamed(context, '/servers');
       } else {
-        final errorData = jsonDecode(response.body);
         setState(() {
-          _error = errorData['error'] ?? 'Username or password is incorrect';
+          _error = 'Username or password is incorrect';
         });
       }
     } catch (e) {
       setState(() {
-        _error = 'An unexpected error occurred';
+        _error = e.toString();
       });
     }
   }

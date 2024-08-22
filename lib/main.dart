@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+
 import 'components/server.dart';
 import 'pages/login_screen.dart';
 import 'components/server_detail.dart';
 import 'pages/history_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'ApiService.dart';
+import 'dio/ApiService.dart';
 import 'components/history.dart';
 
 void main() {

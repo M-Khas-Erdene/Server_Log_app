@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert' as JH;
-import '../components/server.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
+import '../components/server.dart';
+import '../dio/ApiService.dart';
 
 class EditServerPage extends StatefulWidget {
   final Server server;
@@ -22,6 +20,8 @@ class _EditServerPageState extends State<EditServerPage> {
   bool dateOfFailureChanged = false;
   bool dateOfStartupChanged = false;
 
+  final ApiService apiService = ApiService();
+
   @override
   void initState() {
     super.initState();
@@ -31,37 +31,23 @@ class _EditServerPageState extends State<EditServerPage> {
   }
 
   Future<void> updateServer() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? token = prefs.getString('token');
+    final data = {
+      'reason_for_failure': reasonForFailure,
+      'date_of_failure': dateOfFailureChanged
+          ? dateOfFailure?.toIso8601String()
+          : dateOfFailure?.add(Duration(hours: 8)).toIso8601String(),
+      'date_of_startup': dateOfStartupChanged
+          ? dateOfStartup?.toIso8601String()
+          : dateOfStartup?.add(Duration(hours: 8)).toIso8601String(),
+    };
 
-    final response = await http
-        .put(
-      Uri.parse('http://10.0.2.2:5000/servers/date/${widget.server.id}'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-      body: JH.jsonEncode({
-        'reason_for_failure': reasonForFailure,
-        'date_of_failure': dateOfFailureChanged
-            ? dateOfFailure?.toIso8601String()
-            : dateOfFailure?.add(Duration(hours: 8)).toIso8601String(),
-        'date_of_startup': dateOfStartupChanged
-            ? dateOfStartup?.toIso8601String()
-            : dateOfStartup?.add(Duration(hours: 8)).toIso8601String(),
-      }),
-    )
-        .catchError((ex) {
-      debugPrint("Error: $ex");
-    });
-
-    if (response.statusCode == 200) {
+    try {
+      await apiService.updateServerDetails(widget.server.id, data);
       Navigator.pop(context, true);
-    } else {
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-              'Failed to update server: ${response.statusCode} ${response.body}'),
+          content: Text('$e'),
         ),
       );
     }
